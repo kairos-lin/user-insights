@@ -1,0 +1,18 @@
+[project]
+name = "user-insights"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "click>=8.1",
+    "rich>=13.0",
+    "anthropic>=0.39.0",
+    "openai>=1.0.0",
+    "praw>=7.7",
+    "google-api-python-client>=2.0",
+]
+
+[project.scripts]
+user-insights = "user_insights.cli:main"
+
+[tool.setuptools.packages.find]
+exclude = ["output*"]

@@ -1,0 +1,46 @@
+{
+  "Tech_Deep_Dive": {
+    "youtube_channels": ["ThePrimeagen", "Fireship", "Theo-t3.gg", "JackHerrington", "KevinPowell", "WebDevSimplified"],
+    "youtube_keywords": ["tutorial", "review", "migration", "setup guide", "vs"],
+    "reddit_subs": ["programming", "webdev", "LocalLLaMA", "vscode", "cursor"],
+    "tier_overrides": {
+      "Fireship": "tier_1",
+      "ThePrimeagen": "tier_1",
+      "Theo-t3.gg": "tier_1",
+      "JackHerrington": "tier_1"
+    }
+  },
+  "Business_Growth": {
+    "youtube_channels": ["StarterStory", "MicroConf", "IndieHackers", "GarethEverson"],
+    "youtube_keywords": ["revenue", "growth strategy", "passive income", "side hustle", "SaaS"],
+    "reddit_subs": ["startups", "SaaS", "sideproject", "entrepreneur", "indiehackers"],
+    "tier_overrides": {
+      "StarterStory": "tier_1",
+      "MicroConf": "tier_1",
+      "IndieHackers": "tier_1"
+    }
+  },
+  "General_Sentiment": {
+    "youtube_channels": [],
+    "youtube_keywords": [],
+    "reddit_subs": ["AskReddit", "changemyview", "TrueReddit", "unpopularopinion"],
+    "tier_overrides": {}
+  },
+  "whitelist": {
+    "ThePrimeagen": 1.5,
+    "Fireship": 1.5,
+    "Theo-t3.gg": 1.5,
+    "JackHerrington": 1.2,
+    "StarterStory": 1.5,
+    "MicroConf": 1.5,
+    "IndieHackers": 1.5,
+    "KevinPowell": 1.2,
+    "WebDevSimplified": 1.0
+  },
+  "blacklist": {},
+  "tier_weights": {
+    "tier_1": 1.5,
+    "tier_2": 1.0,
+    "tier_3": 0.2
+  }
+}
