@@ -6,7 +6,8 @@ class MissingAPIKey(Exception):
     pass
 
 
-CONFIG_PATH = os.path.expanduser("~/ai-system/ClaudeProjects/user-insights/user_insights_config.json")
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CONFIG_PATH = os.path.join(PROJECT_ROOT, "user_insights_config.json")
 DEFAULT_MODEL = "claude-sonnet-4-20250514"
 DEFAULT_PROVIDER = "anthropic"
 DEFAULT_OUTPUT = "user-insights-output"
