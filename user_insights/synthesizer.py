@@ -124,7 +124,7 @@ def synthesize_unified(
     # ── Phase 1: Executive Answer ──────────────────────────────────────
     from .prompts import EXECUTIVE_ANSWER_SYSTEM
     exec_payload = _build_executive_payload(
-        tagged_signals, stats, macro_contexts, question
+        reddit_signals, tagged_signals, stats, macro_contexts, question
     )
     exec_system = EXECUTIVE_ANSWER_SYSTEM.format(language=lang_name)
     executive_answer = client.generate(
@@ -158,6 +158,7 @@ def synthesize_unified(
 
 
 def _build_executive_payload(
+    reddit_signals: list,
     tagged_signals: list,
     stats: dict,
     macro_contexts: list | None,
@@ -216,6 +217,20 @@ def _build_executive_payload(
             count += 1
             if count >= 8:
                 break
+
+    # Reddit signals (top 12, typed)
+    if reddit_signals:
+        parts.append(f"\n## Top Reddit Signals ({len(reddit_signals)} total)\n")
+        for s in reddit_signals[:12]:
+            st = s.get("signal_type", "") if isinstance(s, dict) else getattr(s, "signal_type", "")
+            strength = s.get("strength", "") if isinstance(s, dict) else getattr(s, "strength", "")
+            sub = s.get("source_subreddit", "") if isinstance(s, dict) else getattr(s, "source_subreddit", "")
+            verbatim = s.get("verbatim_quote", "") if isinstance(s, dict) else getattr(s, "verbatim_quote", "")
+            interp = s.get("interpretation", "") if isinstance(s, dict) else getattr(s, "interpretation", "")
+            parts.append(
+                f"- [{st}/{strength}] r/{sub}: \"{verbatim[:200]}\"\n"
+                f"  Interpretation: {interp[:200]}"
+            )
 
     return "\n".join(parts)
 

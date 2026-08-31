@@ -72,6 +72,9 @@ class APIClient:
                         "run `user-insights config` to update it."
                     )
                 if "connect" in err_str or "timeout" in err_str or "disconnect" in err_str or "protocol" in err_str:
+                    if attempt < 3:
+                        time.sleep(2 ** attempt)
+                        continue
                     raise RuntimeError("Cannot reach the API. Check your internet connection.")
                 raise RuntimeError(f"API error: {e}")
         raise last_error  # type: ignore[misc]
@@ -102,6 +105,9 @@ class APIClient:
                     "run `user-insights config` to update it."
                 )
             except anthropic.APIConnectionError:
+                if attempt < 3:
+                    time.sleep(2 ** attempt)
+                    continue
                 raise RuntimeError(
                     "Cannot reach the Anthropic API. Check your internet connection."
                 )

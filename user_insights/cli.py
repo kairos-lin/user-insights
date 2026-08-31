@@ -84,7 +84,11 @@ def run(question: str | None, youtube_only: bool = False, reddit_only: bool = Fa
     ops.start_step("brain_planner")
 
     try:
-        plan = route_query(question, client)
+        plan, baseline_keywords = route_query(question, client)
+        if not plan.search_keywords:
+            plan.search_keywords = (
+                plan.search_queries[:] if plan.search_queries else baseline_keywords
+            )
         ops.track_llm_call()
     except Exception as e:
         ops.fail_step("brain_planner", str(e))
@@ -132,15 +136,27 @@ def run(question: str | None, youtube_only: bool = False, reddit_only: bool = Fa
             run_youtube = False
 
     if run_youtube:
-        _run_youtube_path(ops, plan, question, language, client, yt_api_key)
-        # Load results from session for synthesis
-        tagged_signals = ops.session.tagged_signals
+        tagged_signals = _run_youtube_path(ops, plan, question, language, client, yt_api_key)
         stats = ops.session.stats
 
     # ── Reddit Path ────────────────────────────────────────────────────
     if run_reddit:
-        _run_reddit_path(ops, plan, question, language, client)
-        reddit_signals = ops.session.signals
+        reddit_signals = _run_reddit_path(ops, plan, question, language, client)
+
+    # Merge Reddit counts into the pulse stats (YouTube-only by default)
+    total = len(tagged_signals) + len(reddit_signals)
+    stats["total_signals"] = total
+    stats["total_records"] = len(ops.session.scraped_items) + len(ops.session.youtube_videos)
+    stats["reddit_records"] = len(ops.session.scraped_items)
+    pvs = stats.setdefault("platform_voice_share", {})
+    pvs["Reddit"] = {
+        "count": len(reddit_signals),
+        "pct": round(len(reddit_signals) / max(total, 1) * 100, 1),
+    }
+    pvs["YouTube"] = {
+        "count": len(tagged_signals),
+        "pct": round(len(tagged_signals) / max(total, 1) * 100, 1),
+    }
 
     # ── Unified Synthesis ──────────────────────────────────────────────
     _print_step(4, "Generating user intelligence report...")
@@ -190,21 +206,24 @@ def _run_youtube_path(ops: AgentOps, plan, question: str, language: str, client:
     _print_step(1, "YouTube — searching videos...")
     ops.start_step("youtube_search")
     try:
-        video_ids = scraper.search_videos(plan.search_keywords, max_results=5)
+        video_ids: list[str] = []
+        for kw in (plan.search_keywords or [""])[:4]:
+            video_ids.extend(scraper.search_videos([kw], max_results=5))
+        video_ids = list(dict.fromkeys(video_ids))
         ops.finish_step("youtube_search", {"video_ids": len(video_ids)})
         console.print(f"  Found {len(video_ids)} videos")
     except QuotaExceededError as e:
         ops.fail_step("youtube_search", str(e))
         console.print(f"[yellow]YouTube quota exceeded: {e}. Saving partial results.[/yellow]")
-        return
+        return []
     except Exception as e:
         ops.fail_step("youtube_search", str(e))
         console.print(f"[red]YouTube search failed: {e}[/red]")
-        return
+        return []
 
     if not video_ids:
         console.print("  [yellow]No videos found.[/yellow]")
-        return
+        return []
 
     # Video details
     _print_step(1, "YouTube — fetching video details...")
@@ -216,11 +235,11 @@ def _run_youtube_path(ops: AgentOps, plan, question: str, language: str, client:
     except QuotaExceededError as e:
         ops.fail_step("youtube_details", str(e))
         console.print(f"[yellow]Quota exceeded: {e}[/yellow]")
-        return
+        return []
     except Exception as e:
         ops.fail_step("youtube_details", str(e))
         console.print(f"[red]Video details failed: {e}[/red]")
-        return
+        return []
 
     # Build YouTubeVideo objects with transcripts and comments
     _print_step(2, "YouTube — extracting transcripts + comments...")
@@ -296,6 +315,7 @@ def _run_youtube_path(ops: AgentOps, plan, question: str, language: str, client:
     ops.session.stats = stats
     ops.checkpoint()
     console.print(f"  Stats: {stats.get('total', 0)} items, sentiment={stats.get('sentiment_pct', {})}")
+    return tagged
 
 
 # ── Reddit Path ─────────────────────────────────────────────────────────
@@ -314,7 +334,7 @@ def _run_reddit_path(ops: AgentOps, plan, question: str, language: str, client: 
     except Exception as e:
         ops.fail_step("decompose", str(e))
         console.print(f"[red]Decomposition failed: {e}[/red]")
-        return
+        return []
 
     ops.finish_step("decompose", {"query_count": len(queries)})
     ops.session.queries = [vars(q) for q in queries]
@@ -337,12 +357,12 @@ def _run_reddit_path(ops: AgentOps, plan, question: str, language: str, client: 
     except Exception as e:
         ops.fail_step("scrape", str(e))
         console.print(f"[red]Reddit scraping failed: {e}[/red]")
-        return
+        return []
 
     if not raw_items:
         console.print("  [yellow]No Reddit results found.[/yellow]")
         ops.finish_step("scrape", {"fetched": 0, "passed_quality": 0})
-        return
+        return []
 
     assessed = assess_quality(raw_items)
     ops.finish_step("scrape", {"fetched": len(raw_items), "passed_quality": len(assessed)})
@@ -366,6 +386,7 @@ def _run_reddit_path(ops: AgentOps, plan, question: str, language: str, client: 
     ops.checkpoint()
     save_signals(ops.session, signals)
     _display_signals(signals)
+    return signals
 
 
 # ── Other Commands ──────────────────────────────────────────────────────
@@ -411,8 +432,8 @@ def config():
     console.print("[dim]YouTube API key must be set via YOUTUBE_API_KEY environment variable.[/dim]")
 
 
-@main.command()
-def list():
+@main.command(name="list")
+def list_sessions_cmd():
     """List past sessions."""
     ops = AgentOps(get_output_base())
     sessions = ops.list_sessions()

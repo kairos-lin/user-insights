@@ -27,7 +27,9 @@ ops.create_session(question, "en")
 
 # Step 0: Brain Planner
 print("\n--- Brain Planner ---")
-plan = route_query(question, client)
+plan, baseline_keywords = route_query(question, client)
+if not plan.search_keywords:
+    plan.search_keywords = plan.search_queries[:] if plan.search_queries else baseline_keywords
 print(f"Domain: {plan.domain}")
 print(f"Platforms: {plan.platforms}")
 print(f"Objective: {plan.auto_objective}")
@@ -37,7 +39,10 @@ print(f"Keywords: {plan.search_keywords}")
 # Step 1: YouTube Search
 print("\n--- YouTube Search ---")
 try:
-    video_ids = scraper.search_videos(plan.search_keywords, max_results=5)
+    video_ids = []
+    for kw in (plan.search_keywords or [""])[:4]:
+        video_ids.extend(scraper.search_videos([kw], max_results=5))
+    video_ids = list(dict.fromkeys(video_ids))
     print(f"Found {len(video_ids)} videos: {video_ids}")
 except QuotaExceededError as e:
     print(f"Quota exceeded: {e}")

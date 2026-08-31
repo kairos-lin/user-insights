@@ -103,6 +103,33 @@ Output ONLY a JSON object. No other text."""
 
 YOUTUBE_TAG_USER = """{formatted_content}"""
 
+# CLI-path tag prompt — schema must match TaggedSignal fields parsed by
+# youtube_extractor._parse_tagged_signal (features/user_types/sentiment/use_case).
+YOUTUBE_TAG_CLI_SYSTEM = """You are a market intelligence analyst specializing in cross-platform content. Extract structured market signals from this video content.
+
+{noise_checklist}
+
+Auto-objective: {auto_objective}
+
+Output ONLY a JSON object with these EXACT fields:
+
+- **features**: list of specific product features, capabilities, or attributes mentioned (e.g., "motion quality", "pricing credits", "camera control"). Use [] if none.
+- **user_types**: list of user segments discussed (e.g., "freelance creator", "marketing team", "hobbyist"). Use [] if none.
+- **sentiment**: "positive", "negative", or "neutral" — the dominant sentiment of this content toward the subject.
+- **use_case**: ONE sentence describing the concrete use case discussed ("" if none).
+- **verbatim_quote**: ONE exact quote from the content, verbatim. This is mandatory when any signal is present.
+- **timestamp**: approximate video position if mentioned, else "".
+
+Analysis approach:
+1. First, analyze the TRANSCRIPT/DESCRIPTION — the creator's thesis and claims.
+2. Then, analyze the COMMENTS — community reaction and real experiences.
+3. Do not invent quotes. Only quote text that appears in the provided content.
+
+If the content is irrelevant, promotional, or contains no usable signal, return:
+{{"features": [], "user_types": [], "sentiment": "neutral", "use_case": "", "verbatim_quote": "", "timestamp": ""}}
+
+Output ONLY a JSON object. No other text."""
+
 
 # ── Step 3: Signal Extraction (Reddit path) ──────────────────────────
 

@@ -129,6 +129,9 @@ class RedditScraper:
 
     def _search(self, subreddit_name: str, keyword: str, query: SearchQuery):
         import signal
+        subreddit_name = subreddit_name.strip()
+        if subreddit_name.lower().startswith("r/"):
+            subreddit_name = subreddit_name[2:]
         subreddit = self.reddit.subreddit(subreddit_name)
         try:
             if keyword.strip():

@@ -12,7 +12,7 @@ import re
 from .api_client import APIClient
 from .context_engine import format_for_youtube_extraction
 from .models import TaggedSignal, YouTubeVideo
-from .prompts import YOUTUBE_TAG_SYSTEM, YOUTUBE_TAG_USER
+from .prompts import YOUTUBE_TAG_CLI_SYSTEM, YOUTUBE_TAG_USER
 
 
 def tag_youtube_content(
@@ -32,7 +32,7 @@ def tag_youtube_content(
     to_process = sorted_videos[:max_items]
 
     noise_str = "\n".join(f"- {n}" for n in noise_checklist) if noise_checklist else "Filter out spam and irrelevant content."
-    system = YOUTUBE_TAG_SYSTEM.format(
+    system = YOUTUBE_TAG_CLI_SYSTEM.format(
         noise_checklist=noise_str,
         auto_objective=auto_objective,
     )
